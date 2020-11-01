@@ -5,57 +5,42 @@ import { DeepReadonly } from '@/util/readonly';
 import { SpriteFilter } from '@/store/sprite_options';
 import { screenHeight, screenWidth } from '@/constants/base';
 import { CompositeModes } from '@/renderer/rendererContext';
-import { IObject } from '@/store/objects';
-import { Store } from 'vuex';
-import { IRootState } from '@/store';
 
-export abstract class ObjectRenderable<Obj extends IObject> {
-	private lastHq: boolean = false;
-	private lastVersion: number = -1;
+export abstract class OffscreenRenderable {
+	private hq: boolean = false;
 	private localRenderer: Renderer | null = null;
+	private lastVersion: any = null;
 	private hitDetectionFallback = false;
 	protected renderable: boolean = false;
 
+	protected constructor() {}
+
+	/**
+	 * A scalable offscreenRenderable has a canvas size independent of the
+	 * display size. * Non-scalable renderables have canvases as big as the
+	 * screen, and are applied without scaling
+	 */
+	protected abstract readonly scaleable: boolean;
+	protected get centeredVertically(): boolean {
+		return false;
+	}
 	protected abstract readonly canvasHeight: number;
 	protected abstract readonly canvasWidth: number;
-	protected abstract renderLocal(rx: RenderContext): Promise<void>;
+	protected abstract readonly width: number;
+	protected abstract readonly height: number;
+	protected abstract readonly x: number;
+	protected abstract readonly y: number;
+	protected abstract readonly version: any;
+	protected abstract readonly flip: boolean;
+	protected abstract readonly composite: CompositeModes;
+	protected abstract readonly filters: DeepReadonly<SpriteFilter[]>;
 
 	protected readonly ready = Promise.resolve();
 
-	public constructor(protected obj: DeepReadonly<Obj>) {}
+	protected abstract renderLocal(rx: RenderContext): Promise<void>;
 
-	public isUpdateable(hq: boolean): boolean {
-		return (
-			this.lastVersion !== this.version &&
-			hq !== this.lastHq &&
-			this.localRenderer !== null
-		);
-	}
+	
 
-	public updatedContent(_current: Store<DeepReadonly<IRootState>>): void {}
-
-	public get id(): string {
-		return this.obj.id;
-	}
-
-	protected get x(): number {
-		return this.obj.x;
-	}
-	protected get y(): number {
-		return this.obj.y;
-	}
-	protected get version(): number {
-		return this.obj.version;
-	}
-	protected get flip(): boolean {
-		return this.obj.flip;
-	}
-	protected get composite(): CompositeModes {
-		return this.obj.composite;
-	}
-	protected get filters(): DeepReadonly<SpriteFilter[]> {
-		return this.obj.filters;
-	}
 
 	public async updateLocalCanvas(hq: boolean) {
 		await this.ready;
@@ -69,14 +54,6 @@ export abstract class ObjectRenderable<Obj extends IObject> {
 		this.localRenderer = new Renderer(width, height);
 		this.hq = hq;
 		await this.localRenderer.render(this.renderLocal.bind(this));
-	}
-
-	public get width() {
-		return this.canvasWidth;
-	}
-
-	public get height() {
-		return this.canvasHeight;
 	}
 
 	public async render(selected: boolean, rx: RenderContext) {
