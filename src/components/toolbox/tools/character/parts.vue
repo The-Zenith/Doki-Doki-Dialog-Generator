@@ -76,7 +76,7 @@ import {
 	Character,
 	Pose,
 } from '@edave64/doki-doki-dialog-generator-pack-format/dist/v2/model';
-import { IAsset } from '@/store/content';
+import { IAssetSwitch } from '@/store/content';
 import {
 	getData,
 	getPose,
@@ -85,7 +85,7 @@ import {
 	ISetPosePositionMutation,
 	ISetStyleAction,
 } from '@/store/objectTypes/characters';
-import { DeepReadonly } from '@/util/readonly';
+import { DeepReadonly } from 'ts-essentials';
 import { defineComponent, PropType } from 'vue';
 
 interface IPartStyleGroup {
@@ -98,7 +98,7 @@ export default defineComponent({
 	components: { PartButton, DFieldset, DFlow },
 	props: {
 		character: {
-			type: Object as PropType<ICharacter>,
+			type: Object as PropType<DeepReadonly<ICharacter>>,
 			required: true,
 		},
 		part: {
@@ -137,9 +137,9 @@ export default defineComponent({
 				return { label: component.label, name: component.id, buttons };
 			});
 		},
-		parts(): { [id: number]: DeepReadonly<IPartButtonImage> } {
+		parts(): { [id: string]: DeepReadonly<IPartButtonImage> } {
 			const ret: { [id: string]: DeepReadonly<IPartButtonImage> } = {};
-			let collection: DeepReadonly<IAsset[][]>;
+			let collection: DeepReadonly<IAssetSwitch[][]>;
 			let offset: DeepReadonly<IPartButtonImage['offset']>;
 			let size: DeepReadonly<IPartButtonImage['size']>;
 			const data = this.charData;
@@ -209,7 +209,7 @@ export default defineComponent({
 			for (let partIdx = 0; partIdx < collection.length; ++partIdx) {
 				const part = collection[partIdx];
 				ret[partIdx] = {
-					images: part.map((partImage: IAsset) => ({
+					images: part.map((partImage: IAssetSwitch) => ({
 						offset: [0, 0],
 						asset: partImage,
 					})),
@@ -220,7 +220,7 @@ export default defineComponent({
 			}
 			return ret;
 		},
-		charData(): DeepReadonly<Character<IAsset>> {
+		charData(): DeepReadonly<Character<IAssetSwitch>> {
 			return getData(this.$store, this.character);
 		},
 	},
@@ -236,7 +236,7 @@ export default defineComponent({
 			]);
 		},
 		generatePosePreview(
-			pose: DeepReadonly<Pose<IAsset>>
+			pose: DeepReadonly<Pose<IAssetSwitch>>
 		): DeepReadonly<IPartButtonImage> {
 			const data = this.charData;
 			const heads = data.heads[pose.compatibleHeads[0]];
@@ -291,8 +291,9 @@ export default defineComponent({
 				if (subSelect.length > 0) selection = subSelect;
 			}
 			this.vuexHistory.transaction(async () => {
-				await this.$store.dispatch('objects/setCharStyle', {
+				await this.$store.dispatch('panels/setCharStyle', {
 					id: this.character.id,
+					panelId: this.character.panelId,
 					styleGroupId,
 					styleId: styleGroups.styles.indexOf(selection[0]),
 				} as ISetStyleAction);
@@ -307,8 +308,9 @@ export default defineComponent({
 				const [headTypeIdx, headIdx] = index
 					.split('_', 2)
 					.map((part) => parseInt(part, 10));
-				this.$store.commit('objects/setPosePosition', {
+				this.$store.commit('panels/setPosePosition', {
 					id: this.character.id,
+					panelId: this.character.panelId,
 					posePositions: {
 						headType: headTypeIdx,
 						head: headIdx,
@@ -329,8 +331,9 @@ export default defineComponent({
 		},
 		setPart(part: ISetPartAction['part'], index: number): void {
 			this.vuexHistory.transaction(() => {
-				this.$store.dispatch('objects/setPart', {
+				this.$store.dispatch('panels/setPart', {
 					id: this.character.id,
+					panelId: this.character.panelId,
 					part,
 					val: index,
 				} as ISetPartAction);

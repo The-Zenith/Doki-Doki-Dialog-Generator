@@ -108,7 +108,7 @@ import { defineComponent } from 'vue';
 import { isWebPSupported } from '@/asset-manager';
 import { ICreateCharacterAction } from '@/store/objectTypes/characters';
 import { ICreateTextBoxAction } from '@/store/objectTypes/textbox';
-import { IAsset, ReplaceContentPackAction } from '@/store/content';
+import { IAssetSwitch, ReplaceContentPackAction } from '@/store/content';
 import {
 	Character,
 	ContentPack,
@@ -122,10 +122,9 @@ import { ICreateChoicesAction } from '@/store/objectTypes/choices';
 import { ICreateNotificationAction } from '@/store/objectTypes/notification';
 import { ICreatePoemAction } from '@/store/objectTypes/poem';
 import environment, { Folder } from '@/environments/environment';
-import { DeepReadonly } from '@/util/readonly';
+import { DeepReadonly } from 'ts-essentials';
 import { IPasteFromClipboardAction } from '@/store/objects';
-
-defineComponent;
+import { IPanel } from '@/store/panels';
 
 const uploadedSpritesPack: ContentPack<string> = {
 	packId: 'dddg.buildin.uploadedSprites',
@@ -149,10 +148,15 @@ export default defineComponent({
 		group: 'characters' as 'characters' | 'sprites' | 'ui',
 	}),
 	computed: {
-		characters(): DeepReadonly<Array<Character<IAsset>>> {
+		currentPanel(): DeepReadonly<IPanel> {
+			return this.$store.state.panels.panels[
+				this.$store.state.panels.currentPanel
+			];
+		},
+		characters(): DeepReadonly<Array<Character<IAssetSwitch>>> {
 			return this.$store.state.content.current.characters;
 		},
-		sprites(): DeepReadonly<Array<Sprite<IAsset>>> {
+		sprites(): DeepReadonly<Array<Sprite<IAssetSwitch>>> {
 			return this.$store.state.content.current.sprites;
 		},
 		hasClipboardContent(): boolean {
@@ -165,12 +169,12 @@ export default defineComponent({
 		},
 	},
 	methods: {
-		assetSpriteBackground(sprite: Sprite<IAsset>) {
+		assetSpriteBackground(sprite: Sprite<IAssetSwitch>) {
 			return sprite.variants[0]
 				.map((variant) => `url('${variant.lq}')`)
 				.join(',');
 		},
-		assetPath(character: Character<IAsset>) {
+		assetPath(character: Character<IAssetSwitch>) {
 			return character.chibi
 				? environment.supports.lq
 					? character.chibi.lq
@@ -210,65 +214,61 @@ export default defineComponent({
 			const lastSegment = url.split('/').slice(-1)[0];
 			this.addNewCustomSprite(lastSegment, url);
 		},
-		async addSpriteToScene(sprite: Sprite<IAsset>) {
+		async addSpriteToScene(sprite: Sprite<IAssetSwitch>) {
 			await this.vuexHistory.transaction(async () => {
-				await this.$store.dispatch('objects/createSprite', {
+				await this.$store.dispatch('panels/createSprite', {
+					panelId: this.currentPanel.id,
 					assets: sprite.variants[0],
 				} as ICreateSpriteAction);
 			});
 		},
 		addTextBox() {
 			this.vuexHistory.transaction(async () => {
-				await this.$store.dispatch(
-					'objects/createTextBox',
-					{} as ICreateTextBoxAction
-				);
+				await this.$store.dispatch('panels/createTextBox', {
+					panelId: this.currentPanel.id,
+				} as ICreateTextBoxAction);
 			});
 		},
 		addChoice() {
 			this.vuexHistory.transaction(async () => {
-				await this.$store.dispatch(
-					'objects/createChoice',
-					{} as ICreateChoicesAction
-				);
+				await this.$store.dispatch('panels/createChoice', {
+					panelId: this.currentPanel.id,
+				} as ICreateChoicesAction);
 			});
 		},
 		addDialog() {
 			this.vuexHistory.transaction(async () => {
-				await this.$store.dispatch(
-					'objects/createNotification',
-					{} as ICreateNotificationAction
-				);
+				await this.$store.dispatch('panels/createNotification', {
+					panelId: this.currentPanel.id,
+				} as ICreateNotificationAction);
 			});
 		},
 		addPoem() {
 			this.vuexHistory.transaction(async () => {
-				await this.$store.dispatch(
-					'objects/createPoem',
-					{} as ICreatePoemAction
-				);
+				await this.$store.dispatch('panels/createPoem', {
+					panelId: this.currentPanel.id,
+				} as ICreatePoemAction);
 			});
 		},
 		addConsole() {
 			this.vuexHistory.transaction(async () => {
-				await this.$store.dispatch(
-					'objects/createConsole',
-					{} as ICreatePoemAction
-				);
+				await this.$store.dispatch('panels/createConsole', {
+					panelId: this.currentPanel.id,
+				} as ICreatePoemAction);
 			});
 		},
 		paste() {
 			this.vuexHistory.transaction(async () => {
-				await this.$store.dispatch(
-					'objects/pasteObjectFromClipboard',
-					{} as IPasteFromClipboardAction
-				);
+				await this.$store.dispatch('panels/pasteObjectFromClipboard', {
+					panelId: this.currentPanel.id,
+				} as IPasteFromClipboardAction);
 			});
 		},
 		onChosen(id: string) {
 			this.vuexHistory.transaction(async () => {
-				await this.$store.dispatch('objects/createCharacters', {
+				await this.$store.dispatch('panels/createCharacters', {
 					characterType: id,
+					panelId: this.currentPanel.id,
 				} as ICreateCharacterAction);
 			});
 		},

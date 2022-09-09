@@ -13,7 +13,7 @@ import { IRootState } from '@/store';
 import { ReplaceContentPackAction } from '@/store/content';
 import { reactive } from 'vue';
 import { Repo } from '@/models/repo';
-import { DeepReadonly } from '@/util/readonly';
+import { DeepReadonly } from 'ts-essentials';
 import { IAuthors } from '@edave64/dddg-repo-filters/dist/authors';
 import { IPack } from '@edave64/dddg-repo-filters/dist/pack';
 
@@ -182,6 +182,7 @@ export class Electron implements IEnvironment {
 				}
 			}
 		);
+		this.electron.ipcRenderer.send('init-dddg');
 	}
 
 	public updateDownloadFolder(): void {
@@ -365,7 +366,7 @@ export class Electron implements IEnvironment {
 				);
 			}
 			if (this.pendingContentPacksReplace.length > 0) {
-				for (const action in this.pendingContentPacksReplace) {
+				for (const action of this.pendingContentPacksReplace) {
 					await this.$store!.dispatch('content/replaceContentPack', action);
 				}
 			}

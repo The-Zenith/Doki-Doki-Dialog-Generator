@@ -1,8 +1,9 @@
 import { RenderAbortedException } from './renderAbortedException';
 import { Renderer } from './renderer';
-import { ErrorAsset } from '@/models/error-asset';
+import { ErrorAsset } from '@/render-utils/assets/error-asset';
 import { SpriteFilter } from '@/store/sprite_options';
-import { DeepReadonly } from '@/util/readonly';
+import { IAsset } from '@/render-utils/assets/asset';
+import { DeepReadonly } from 'ts-essentials';
 
 export type CompositeModes =
 	| 'source-over'
@@ -67,7 +68,13 @@ export class RenderContext {
 		if (this.aborted) throw new RenderAbortedException();
 		this.fsCtx.save();
 
-		const { font, align, x = 0, y = 0, text = '' } = {
+		const {
+			font,
+			align,
+			x = 0,
+			y = 0,
+			text = '',
+		} = {
 			...{
 				font: '20px aller',
 				align: 'left' as CanvasTextAlign,
@@ -104,7 +111,11 @@ export class RenderContext {
 		if (this.aborted) throw new RenderAbortedException();
 		this.fsCtx.save();
 
-		const { font, align, text = '' } = {
+		const {
+			font,
+			align,
+			text = '',
+		} = {
 			...{
 				font: '20px aller',
 				align: 'left' as CanvasTextAlign,
@@ -131,7 +142,7 @@ export class RenderContext {
 
 	public drawImage(
 		params: {
-			image: HTMLImageElement | ErrorAsset | Renderer;
+			image: IAsset | Renderer;
 			flip?: boolean;
 			composite?: CompositeModes;
 		} & IRPos &
@@ -204,7 +215,7 @@ export class RenderContext {
 			if (params.rotationAnchor) {
 				this.fsCtx.translate(rotX, rotY);
 			}
-			this.fsCtx.fillRect(-10, -1, 21, 3);
+			//this.fsCtx.fillRect(-10, -1, 21, 3);
 			this.fsCtx.rotate(params.rotation);
 			if (params.rotationAnchor) {
 				this.fsCtx.translate(-rotX, -rotY);
@@ -213,11 +224,7 @@ export class RenderContext {
 
 		this.fsCtx.translate(x + w / 2, y + h / 2);
 		this.fsCtx.scale(flip ? -1 : 1, 1);
-		if (image instanceof Renderer) {
-			image.paintOnto(this.fsCtx, { x: -w / 2, y: -h / 2, w, h });
-		} else {
-			this.fsCtx.drawImage(image as HTMLImageElement, -w / 2, -h / 2, w, h);
-		}
+		image.paintOnto(this.fsCtx, { x: -w / 2, y: -h / 2, w, h });
 		this.fsCtx.restore();
 		this.fsCtx.globalCompositeOperation = 'source-over';
 	}
@@ -282,7 +289,7 @@ export class RenderContext {
 			image = (image as any).previewCanvas;
 		}
 		return this.fsCtx.createPattern(
-			(image as any) as CanvasImageSource,
+			image as any as CanvasImageSource,
 			repetition
 		)!;
 	}
@@ -356,59 +363,59 @@ export class RenderContext {
 }
 
 export interface IShadow {
-	blur?: number;
-	color?: string;
-	offsetX?: number;
-	offsetY?: number;
+	readonly blur?: number;
+	readonly color?: string;
+	readonly offsetX?: number;
+	readonly offsetY?: number;
 }
 
 export interface IOutline {
-	style: string;
-	width: number;
+	readonly style: string;
+	readonly width: number;
 }
 
 export interface IFill {
-	style: string | CanvasGradient | CanvasPattern;
+	readonly style: string | CanvasGradient | CanvasPattern;
 }
 
 interface IOShadow {
-	shadow?: IShadow;
+	readonly shadow?: IShadow;
 }
 
 interface IOComposition {
-	composition?: CompositeModes;
+	readonly composition?: CompositeModes;
 }
 
 interface IRPos {
-	x: number;
-	y: number;
+	readonly x: number;
+	readonly y: number;
 }
 
 interface IRSize {
-	w: number;
-	h: number;
+	readonly w: number;
+	readonly h: number;
 }
 
 interface IOSize {
-	w?: number;
-	h?: number;
+	readonly w?: number;
+	readonly h?: number;
 }
 
 interface IOOutline {
-	outline?: IOutline;
+	readonly outline?: IOutline;
 }
 interface IOFilters {
-	filters?: DeepReadonly<SpriteFilter[]>;
+	readonly filters?: DeepReadonly<SpriteFilter[]>;
 }
 
 interface IORotation {
-	rotation?: number;
-	rotationAnchor?: {
-		x: number;
-		y: number;
+	readonly rotation?: number;
+	readonly rotationAnchor?: {
+		readonly x: number;
+		readonly y: number;
 	};
 }
 
 interface IOFill {
-	fill?: IFill;
+	readonly fill?: IFill;
 }

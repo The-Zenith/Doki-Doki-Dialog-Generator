@@ -43,6 +43,7 @@
 import Toggle from '@/components/toggle.vue';
 import DFieldset from '@/components/ui/d-fieldset.vue';
 import DFlow from '@/components/ui/d-flow.vue';
+import { IPanel } from '@/store/panels';
 import { PanelMixin } from './panelMixin';
 import {
 	IAddChoiceAction,
@@ -50,7 +51,7 @@ import {
 	IChoices,
 	IRemoveChoiceAction,
 } from '@/store/objectTypes/choices';
-import { DeepReadonly } from '@/util/readonly';
+import { DeepReadonly } from 'ts-essentials';
 import { ComponentCustomProperties, defineComponent } from 'vue';
 import { genericSetable } from '@/util/simpleSettable';
 import ObjectTool, { Handler } from './object-tool.vue';
@@ -70,16 +71,19 @@ export default defineComponent({
 		textEditor: false,
 	}),
 	computed: {
-		object(): IChoices {
-			const obj = this.$store.state.objects.objects[
-				this.$store.state.ui.selection!
+		currentPanel(): DeepReadonly<IPanel> {
+			return this.$store.state.panels.panels[
+				this.$store.state.panels.currentPanel
 			];
+		},
+		object(): IChoices {
+			const obj = this.currentPanel.objects[this.$store.state.ui.selection!];
 			if (obj.type !== 'choice') return undefined!;
 			return obj as IChoices;
 		},
-		autoWrap: setable('autoWrap', 'objects/setAutoWrapping'),
+		autoWrap: setable('autoWrap', 'panels/setAutoWrapping'),
 		// eslint-disable-next-line @typescript-eslint/camelcase
-		buttonText: simpleButtonSettable('text', 'objects/setChoiceText', true),
+		buttonText: simpleButtonSettable('text'),
 		buttons(): DeepReadonly<IChoice[]> {
 			return this.object.choices;
 		},
@@ -105,8 +109,9 @@ export default defineComponent({
 		},
 		addChoice(): void {
 			this.vuexHistory.transaction(() => {
-				this.$store.dispatch('objects/addChoice', {
+				this.$store.dispatch('panels/addChoice', {
 					id: this.object.id,
+					panelId: this.object.panelId,
 					text: '',
 				} as IAddChoiceAction);
 			});
@@ -119,8 +124,9 @@ export default defineComponent({
 				) {
 					this.select(this.currentIdx - 1);
 				}
-				this.$store.dispatch('objects/removeChoice', {
+				this.$store.dispatch('panels/removeChoice', {
 					id: this.object.id,
+					panelId: this.object.panelId,
 					choiceIdx: this.currentIdx,
 				} as IRemoveChoiceAction);
 			});
@@ -128,21 +134,19 @@ export default defineComponent({
 	},
 });
 
-function simpleButtonSettable<K extends keyof IChoice>(
-	key: K,
-	message: string,
-	action = false
-) {
+function simpleButtonSettable<K extends keyof IChoice>(key: K) {
 	return {
 		get(this: IThis): IChoice[K] {
 			return this.object.choices[this.currentIdx][key];
 		},
 		set(this: IThis, val: IChoice[K]): void {
 			this.vuexHistory.transaction(() => {
-				this.$store[action ? 'dispatch' : 'commit'](message, {
+				this.$store.commit('panels/setChoiceProperty', {
 					id: this.object.id,
+					panelId: this.object.panelId,
 					choiceIdx: this.currentIdx,
-					[key]: val,
+					key,
+					value: val,
 				});
 			});
 		},

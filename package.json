@@ -5,6 +5,8 @@
 		"dev": "vite",
 		"build": "vite build",
 		"preview": "vite preview",
+		"typeCheck": "tsc --noEmit",
+		"assetConversions": "node ./scripts/asset-conversions.js",
 		"build:web": "vite build && node ./scripts/build-hashlist.js > ./dist/hash-list.json",
 		"build:electron": "vite build",
 		"sync:release": "rsync -av --delete --exclude=assets/**.lq.webp --exclude=assets/**.png ./dist/ ../dist/release/",
@@ -16,13 +18,16 @@
 		"@edave64/dddg-repo-filters": "^0.4.0",
 		"@edave64/doki-doki-dialog-generator-pack-format": "^2.0.0",
 		"mitt": "^3.0.0",
+		"pako": "^2.0.4",
 		"typescript": "^4.5.4",
 		"vue": "^3.2.25",
-		"vuex": "^4.0.2"
+		"vuex": "^4.0.2",
+		"prettier": "^2.7.1"
 	},
 	"devDependencies": {
 		"@vitejs/plugin-vue": "^2.0.0",
 		"sass": "^1.45.0",
-		"vite": "^2.7.2"
+		"vite": "^2.7.2",
+		"ts-essentials": "^9.1.2"
 	}
 }

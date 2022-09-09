@@ -78,11 +78,12 @@ import {
 } from '@/store/objectTypes/characters';
 import Toggle from '@/components/toggle.vue';
 import DFieldset from '@/components/ui/d-fieldset.vue';
+import { IPanel } from '@/store/panels';
 import Parts from './character/parts.vue';
 import { Character } from '@edave64/doki-doki-dialog-generator-pack-format/dist/v2/model';
-import { IAsset } from '@/store/content';
+import { IAssetSwitch } from '@/store/content';
 import { PanelMixin } from './panelMixin';
-import { DeepReadonly } from '@/util/readonly';
+import { DeepReadonly } from 'ts-essentials';
 import { defineComponent } from 'vue';
 import { genericSetable } from '@/util/simpleSettable';
 import ObjectTool from './object-tool.vue';
@@ -101,17 +102,22 @@ export default defineComponent({
 		panelForParts: null as string | null,
 	}),
 	computed: {
-		flip: setable('flip', 'objects/setFlip'),
-		closeUp: setable('close', 'objects/setClose'),
+		flip: setable('flip', 'panels/setFlip'),
+		closeUp: setable('close', 'panels/setClose'),
 		selection(): string {
 			return this.$store.state.ui.selection!;
 		},
+		currentPanel(): DeepReadonly<IPanel> {
+			return this.$store.state.panels.panels[
+				this.$store.state.panels.currentPanel
+			];
+		},
 		object(): DeepReadonly<ICharacter> {
-			const obj = this.$store.state.objects.objects[this.selection];
+			const obj = this.currentPanel.objects[this.selection];
 			if (obj.type !== 'character') return undefined!;
 			return obj as ICharacter;
 		},
-		charData(): DeepReadonly<Character<IAsset>> {
+		charData(): DeepReadonly<Character<IAssetSwitch>> {
 			return getData(this.$store, this.object);
 		},
 		label(): string {
@@ -135,24 +141,27 @@ export default defineComponent({
 	methods: {
 		seekPose(delta: number): void {
 			this.vuexHistory.transaction(() => {
-				this.$store.dispatch('objects/seekPose', {
+				this.$store.dispatch('panels/seekPose', {
 					id: this.object.id,
+					panelId: this.object.panelId,
 					delta,
 				} as ISeekPoseAction);
 			});
 		},
 		seekStyle(delta: number): void {
 			this.vuexHistory.transaction(() => {
-				this.$store.dispatch('objects/seekStyle', {
+				this.$store.dispatch('panels/seekStyle', {
 					id: this.object.id,
+					panelId: this.object.panelId,
 					delta,
 				} as ISeekStyleAction);
 			});
 		},
 		seekPart(part: string, delta: number): void {
 			this.vuexHistory.transaction(() => {
-				this.$store.dispatch('objects/seekPart', {
+				this.$store.dispatch('panels/seekPart', {
 					id: this.object.id,
+					panelId: this.object.panelId,
 					delta,
 					part,
 				} as ISeekPosePartAction);

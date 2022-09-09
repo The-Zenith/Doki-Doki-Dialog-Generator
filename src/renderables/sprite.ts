@@ -1,6 +1,6 @@
 import { getAAsset } from '@/asset-manager';
 import { ISprite } from '@/store/objectTypes/sprite';
-import { DeepReadonly } from '@/util/readonly';
+import { DeepReadonly } from 'ts-essentials';
 import {
 	AssetListRenderable,
 	IDrawAssets,
@@ -9,7 +9,7 @@ import {
 
 export class Sprite extends AssetListRenderable<ISprite> {
 	private assets!: IDrawAssets[];
-	protected ready!: Promise<void>;
+	protected ready: Promise<void> = null!;
 	protected canvasHeight: number = 0;
 	protected canvasWidth: number = 0;
 
@@ -28,15 +28,13 @@ export class Sprite extends AssetListRenderable<ISprite> {
 			readyResolve = resolve;
 		});
 		const assets = await Promise.all(
-			this.obj.assets.map(asset => getAAsset(asset))
+			this.obj.assets.map((asset) => getAAsset(asset))
 		);
 		let width = 0;
 		let height = 0;
 		for (const asset of assets) {
-			if (asset instanceof HTMLImageElement) {
-				if (asset.height > height) height = asset.height;
-				if (asset.width > width) width = asset.width;
-			}
+			if (asset.height > height) height = asset.height;
+			if (asset.width > width) width = asset.width;
 		}
 		this.canvasWidth = width;
 		this.canvasHeight = height;

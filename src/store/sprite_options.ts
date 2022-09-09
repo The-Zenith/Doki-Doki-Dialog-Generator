@@ -1,6 +1,7 @@
-import { ICommand } from '@/eventbus/command';
 import { CompositeModes } from '@/renderer/rendererContext';
-import { exhaust } from '@/util/exhaust';
+import { UnreachableCaseError } from 'ts-essentials';
+import { IObject, ISetFiltersMutation } from './objects';
+import { IPanel } from './panels';
 
 export type SpriteFilter =
 	| INumericSpriteFilter<'blur'>
@@ -30,37 +31,37 @@ export interface IHasSpriteFilters {
 }
 
 export interface INumericSpriteFilter<K extends string> {
-	type: K;
-	value: number;
+	readonly type: K;
+	readonly value: number;
 }
 
 export interface IDropShadowSpriteFilter {
-	type: 'drop-shadow';
-	offsetX: number;
-	offsetY: number;
-	blurRadius: number;
-	color: string;
+	readonly type: 'drop-shadow';
+	readonly offsetX: number;
+	readonly offsetY: number;
+	readonly blurRadius: number;
+	readonly color: string;
 }
 
 export interface ISetFilterValue {
-	type: Exclude<SpriteFilter['type'], 'drop-shadow'>;
-	value: number;
+	readonly type: Exclude<SpriteFilter['type'], 'drop-shadow'>;
+	readonly value: number;
 }
 
 export interface ISetDropShadowFilter {
-	type: 'drop-shadow';
-	offsetX?: number;
-	offsetY?: number;
-	blurRadius?: number;
-	color?: string;
+	readonly type: 'drop-shadow';
+	readonly offsetX?: number;
+	readonly offsetY?: number;
+	readonly blurRadius?: number;
+	readonly color?: string;
 }
 
 export function addFilter(
 	action: IAddFilterAction,
-	objLookup: (id: string) => IHasSpriteFilters,
+	objLookup: () => IHasSpriteFilters,
 	setMutation: (mutation: ISetFiltersMutation) => void
 ): void {
-	const obj = objLookup(action.id);
+	const obj = objLookup();
 	const filters = [...obj.filters];
 	let newFilter: SpriteFilter;
 	switch (action.type) {
@@ -93,54 +94,57 @@ export function addFilter(
 			};
 			break;
 		default:
-			exhaust(action.type);
+			throw new UnreachableCaseError(action.type);
 	}
 	filters.splice(action.idx, 0, newFilter);
 
 	setMutation({
-		id: action.id,
+		panelId: action.panelId,
+		id: action.id!,
 		filters,
 	});
 }
 
 export function removeFilter(
 	action: IRemoveFilterAction,
-	objLookup: (id: string) => IHasSpriteFilters,
+	objLookup: () => IHasSpriteFilters,
 	setMutation: (mutation: ISetFiltersMutation) => void
 ) {
-	const obj = objLookup(action.id);
+	const obj = objLookup();
 	const filters = [...obj.filters];
 	filters.splice(action.idx, 1);
 	setMutation({
 		id: action.id,
+		panelId: action.panelId,
 		filters,
 	} as ISetFiltersMutation);
 }
 
 export function moveFilter(
 	action: IMoveFilterAction,
-	objLookup: (id: string) => IHasSpriteFilters,
+	objLookup: () => IHasSpriteFilters,
 	setMutation: (mutation: ISetFiltersMutation) => void
 ) {
-	const obj = objLookup(action.id);
+	const obj = objLookup();
 	const filters = [...obj.filters];
 	const filter = filters[action.idx];
 	filters.splice(action.idx, 1);
 	filters.splice(action.idx + action.moveBy, 0, filter);
 	setMutation({
 		id: action.id,
+		panelId: action.panelId,
 		filters,
 	} as ISetFiltersMutation);
 }
 
 export function setFilter(
 	action: ISetFilterAction,
-	objLookup: (id: string) => IHasSpriteFilters,
+	objLookup: () => IHasSpriteFilters,
 	setMutation: (mutation: ISetFiltersMutation) => void
 ) {
-	const obj = objLookup(action.id);
+	const obj = objLookup();
 	const filters = [...obj.filters];
-	const filter = { ...filters[action.idx] } as SpriteFilter;
+	const filter = { ...filters[action.idx] };
 	filters[action.idx] = filter;
 
 	if (filter.type === 'drop-shadow') {
@@ -161,6 +165,7 @@ export function setFilter(
 	}
 	setMutation({
 		id: action.id,
+		panelId: action.panelId,
 		filters,
 	} as ISetFiltersMutation);
 }
@@ -168,34 +173,34 @@ export function setFilter(
 export type SetFilterValue = ISetFilterValue | ISetDropShadowFilter;
 
 export function applyFilter(obj: IHasSpriteFilters, command: SetFilterValue) {
-	const filter = obj.filters.find(f => f.type === command.type);
+	const filter = obj.filters.find((f) => f.type === command.type);
 	if (!filter) return;
 	Object.assign(filter, command);
 }
 
-export interface ISetCompositionMutation extends ICommand {
-	readonly composite: CompositeModes;
-}
-
-export interface ISetFiltersMutation extends ICommand {
-	readonly filters: SpriteFilter[];
-}
-
-export interface IAddFilterAction extends ICommand {
+export interface IAddFilterAction {
+	readonly id?: IObject['id'];
+	readonly panelId: IPanel['id'];
 	readonly type: SpriteFilter['type'];
 	readonly idx: number;
 }
 
-export interface IRemoveFilterAction extends ICommand {
+export interface IRemoveFilterAction {
+	readonly id?: IObject['id'];
+	readonly panelId: IPanel['id'];
 	readonly idx: number;
 }
 
-export interface IMoveFilterAction extends ICommand {
+export interface IMoveFilterAction {
+	readonly id?: IObject['id'];
+	readonly panelId: IPanel['id'];
 	readonly idx: number;
 	readonly moveBy: number;
 }
 
-export interface ISetFilterAction extends ICommand {
+export interface ISetFilterAction {
+	readonly id?: IObject['id'];
+	readonly panelId: IPanel['id'];
 	readonly idx: number;
 	readonly value?: number;
 	readonly offsetX?: number;

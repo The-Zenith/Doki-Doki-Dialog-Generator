@@ -1,15 +1,16 @@
 import { RenderContext } from '@/renderer/rendererContext';
 import { getAAsset } from '@/asset-manager';
 import { PoseRenderCommand } from '@edave64/doki-doki-dialog-generator-pack-format/dist/v2/model';
-import { IAsset } from '@/store/content';
-import { ErrorAsset } from '@/models/error-asset';
-import { DeepReadonly } from '@/util/readonly';
+import { IAssetSwitch } from '@/store/content';
+import { DeepReadonly } from 'ts-essentials';
 import { IObject } from '@/store/objects';
 import { OffscreenRenderable } from './offscreenRenderable';
 import { Store } from 'vuex';
 import { IRootState } from '@/store';
 import { ITextBox } from '@/store/objectTypes/textbox';
 import { IHitbox } from './renderable';
+import { IAsset } from '@/render-utils/assets/asset';
+import { IPanel } from '@/store/panels';
 
 export abstract class AssetListRenderable<
 	Obj extends IObject
@@ -50,13 +51,15 @@ export abstract class AssetListRenderable<
 
 	public updatedContent(
 		_current: Store<DeepReadonly<IRootState>>,
-		panelId: string
+		panelId: IPanel['id']
 	): void {
-		const panel = _current.state.objects.panels[panelId];
-		const inPanel = [...panel.order, ...panel.onTopOrder];
+		const panel = _current.state.panels.panels[panelId];
+		const inPanel = [...panel.order, ...panel.onTopOrder]; // Error here? (Donic_Volpe)
 		this.refTextbox = null;
 		for (const key of inPanel) {
-			const obj = _current.state.objects.objects[key] as ITextBox;
+			const obj = _current.state.panels.panels[panelId].objects[
+				key
+			] as ITextBox;
 			if (obj.type === 'textBox' && obj.talkingObjId === this.obj.id) {
 				this.refTextbox = obj;
 				return;
@@ -65,19 +68,18 @@ export abstract class AssetListRenderable<
 	}
 
 	protected async renderLocal(rx: RenderContext): Promise<void> {
-		const drawAssetsUnloaded: Array<
-			IDrawAssetsUnloaded | IDrawAssets
-		> = this.getAssetList();
+		const drawAssetsUnloaded: Array<IDrawAssetsUnloaded | IDrawAssets> =
+			this.getAssetList();
 
 		const loadedDraws = await Promise.all(
 			drawAssetsUnloaded
-				.filter(drawAsset => drawAsset.assets)
-				.map(drawAsset => loadAssets(drawAsset, rx.hq))
+				.filter((drawAsset) => drawAsset.assets)
+				.map((drawAsset) => loadAssets(drawAsset, rx.hq))
 		);
 		for (const loadedDraw of loadedDraws) {
 			for (const asset of loadedDraw.assets) {
 				rx.drawImage({
-					image: asset,
+					image: asset as IAsset,
 					composite: loadedDraw.composite,
 					x: loadedDraw.offset[0],
 					y: loadedDraw.offset[1],
@@ -89,14 +91,14 @@ export abstract class AssetListRenderable<
 
 export interface IDrawAssetsUnloaded {
 	offset: DeepReadonly<[number, number]>;
-	assets: DeepReadonly<IAsset[]>;
+	assets: DeepReadonly<IAssetSwitch[]>;
 	composite?: PoseRenderCommand<any>['composite'];
 }
 
 export interface IDrawAssets {
 	loaded: true;
 	offset: DeepReadonly<[number, number]>;
-	assets: DeepReadonly<Array<HTMLImageElement | ErrorAsset>>;
+	assets: DeepReadonly<IAsset[]>;
 	composite?: PoseRenderCommand<any>['composite'];
 }
 
@@ -109,7 +111,7 @@ export async function loadAssets(
 		loaded: true,
 		offset: unloaded.offset,
 		assets: await Promise.all(
-			unloaded.assets.map(asset => getAAsset(asset, hq))
+			unloaded.assets.map((asset) => getAAsset(asset, hq))
 		),
 		composite: unloaded.composite,
 	};

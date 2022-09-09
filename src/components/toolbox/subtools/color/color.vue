@@ -48,12 +48,12 @@ import {
 	Color,
 	ContentPack,
 } from '@edave64/doki-doki-dialog-generator-pack-format/dist/v2/model';
-import { IAsset, ReplaceContentPackAction } from '@/store/content';
+import { IAssetSwitch, ReplaceContentPackAction } from '@/store/content';
 import SliderGroup from './sliderGroup.vue';
 import DButton from '../../../ui/d-button.vue';
 import { RGBAColor } from '@/util/colors/rgb';
 import { defineComponent, PropType } from 'vue';
-import { DeepReadonly } from '@/util/readonly';
+import { DeepReadonly } from 'ts-essentials';
 import eventBus, { ColorPickedEvent } from '@/eventbus/event-bus';
 
 const generatedPackId = 'dddg.generated.colors';
@@ -124,10 +124,10 @@ export default defineComponent({
 			}
 		},
 		addSwatch() {
-			if (this.swatches.find(swatch => swatch.color === this.color)) return;
+			if (this.swatches.find((swatch) => swatch.color === this.color)) return;
 
 			const existingPack = this.$store.state.content.contentPacks.find(
-				pack => pack.packId === 'generatedPackId'
+				(pack) => pack.packId === 'generatedPackId'
 			) || {
 				packId: generatedPackId,
 				packCredits: [''],
@@ -141,7 +141,7 @@ export default defineComponent({
 				colors: [],
 			};
 
-			const newPack: ContentPack<IAsset> = {
+			const newPack: ContentPack<IAssetSwitch> = {
 				...existingPack,
 				colors: [
 					...existingPack.colors,
